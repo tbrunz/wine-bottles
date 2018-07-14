@@ -6,11 +6,56 @@
 # If the corresponding wine bottle is not mounted, it will be mounted. 
 # A mounted wine bottle can be unmounted by including the '-u' switch. 
 #
-# usage: myst [ o | m | r | e | 1 | 2 | 3 | 4 | 5 ] [ -d | -u ] [ <wine command> ] 
+# usage: myst [ o | m | r | e | 1 | 2 | 3 | 4 | 5 ] [ -d | -u | -m ] [ <wine command> ] 
 #
+SCRIPT_NAME=$( basename ${0} )
+
 SetupErr() {
-    echo "Error !  ${1} ! "
+    echo "${SCRIPT_NAME}: ${1} ! "
     exit 1
+}
+
+Mount_Image() {
+    # 
+    # If it's already mounted, note that and move on:
+    #
+    if [[ -x "${WINE_MOUNT}" ]]; then
+        echo "${SCRIPT_NAME}: '${BOTTLE_NAME}' is already mounted. "
+        return
+    fi
+    
+    # See if we can find the IMG file to mount:
+    #
+    [[ -r "${IMG_FILE}" ]] || \
+        SetupErr "Wine Bottle not mounted; cannot find IMG file '${IMG_FILE}'"
+
+    # IMG file is present -- attempt to loop-mount it:
+    #
+    LOOP_DEV=$( udisksctl loop-setup -o 1048576 -f "${IMG_FILE}" )
+    
+    # If loop-mounting fails, we can't continue:
+    #    
+    (( $? == 0 )) && return
+    
+    SetupErr "Cannot set up IMG file '${IMG_FILE}' for mounting"
+}
+
+Unmount_Image() {
+    #
+    # It's gotta be mounted in order to umount it...
+    #
+    [[ -x "${WINE_MOUNT}" ]] || SetupErr "'${BOTTLE_NAME}' is not mounted"
+    
+    # It's mounted, but we need to know what loop device it's using:
+    #
+    LOOP_DEV=$( /sbin/losetup -j "${IMG_FILE}" | grep -o '/dev/loop.' )
+    
+    (( $? == 0 )) || SetupErr "Cannot resolve IMG file loop device"
+    
+    # This unmount also discards the loop device for us -- no 'sudo' required:
+    #
+    udisksctl unmount -b ${LOOP_DEV} 
+    return $?
 }
 
 #
@@ -33,23 +78,31 @@ fi
 # and that all Wine debug output will be suppressed: 
 #
 DEBUG_CMD="WINEDEBUG=-all"
-UMOUNT_IMG=
+IMAGE_MOUNTING=
 
 #
 # Any additional arguments imply '-d'; 
 # This includes '-d' itself, which, if present, needs to be removed: 
 #
 if [[ -n "${1}" ]]; then
-    #
+    # 
+    # Reduce the next argument to lower case & get the first two chars.
     # Note that since we're to erase DEBUG_CMD, it's a free variable here:
     #
     DEBUG_CMD=${1,,}
-    [[ "${DEBUG_CMD:0:2}" == '-d' ]] && shift
+    DEBUG_CMD=${DEBUG_CMD:0:2}
     
-    # An 'unmount' switch takes precedence:
+    # Check for an explicit 'debug' switch:
     #
-    DEBUG_CMD=${1,,}
-    [[ "${DEBUG_CMD:0:2}" == '-u' ]] && UMOUNT_IMG=true
+    [[ "${DEBUG_CMD}" == '-d' ]] && shift
+    
+    # An 'mount' switch takes precedence over 'debug':
+    #
+    [[ "${DEBUG_CMD}" == '-m' ]] && IMAGE_MOUNTING="mount"
+    
+    # An 'unmount' switch takes precedence over all:
+    #
+    [[ "${DEBUG_CMD}" == '-u' ]] && IMAGE_MOUNTING="unmount"
     
     # Since '-d' was implied or expressed, do NOT turn off Wine debug:
     #
@@ -170,39 +223,33 @@ IMG_FILE="wine-myst-${BOTTLE}-maint.img"
 #
 # Are we to unmount the IMG file?
 #
-if [[ ${UMOUNT_IMG} ]]; then
-
-    [[ -x "${WINE_MOUNT}" ]] || SetupErr "'${BOTTLE_NAME}' is not mounted"
-    
-    # It's mounted, but we need to know what loop device it's using:
-    #
-    LOOP_DEV=$( /sbin/losetup -j "${IMG_FILE}" | grep -o '/dev/loop.' )
-    
-    (( $? == 0 )) || SetupErr "Cannot resolve IMG file loop device"
-    
-    # This unmount also discards the loop device for us -- no 'sudo' required:
-    #
-    udisksctl unmount -b ${LOOP_DEV} 
+if [[ "${IMAGE_MOUNTING}" == "unmount" ]]; then  
+    # 
+    # If instructed explicitly to 'unmount', then it's do & die:
+    #    
+    Unmount_Image
     exit $?
 fi
 
 #
-# Not unmounting...  Check to see if the IMG file is mounted; mount it if not:
+# Are we to mount the IMG file (and do nothing else)?
+#
+if [[ "${IMAGE_MOUNTING}" == "mount" ]]; then 
+    # 
+    # If instructed explicitly to 'mount', then it's do & die:
+    #    
+    Mount_Image
+    exit $?
+fi
+
+#
+# Check to see if the IMG file is mounted; mount it if not:
 #
 if [[ ! -x "${WINE_MOUNT}" ]]; then 
     #
-    # See if we can find the IMG file to mount:
+    # Mount, then wait for the mount to complete before accessing:
     #
-    [[ -r "${IMG_FILE}" ]] || \
-            SetupErr "Wine Bottle not mounted and cannot find IMG file"
-    #
-    # IMG file is present -- attempt to loop-mount it:
-    #
-    LOOP_DEV=$( udisksctl loop-setup -o 1048576 -f "${IMG_FILE}" )
-    
-    (( $? == 0 )) || SetupErr "Cannot set up IMG file for mounting"
-    
-    # Wait for the mount to complete before accessing it!
+    Mount_Image
     sleep 1
 fi
 
