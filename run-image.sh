@@ -2,9 +2,10 @@
 #
 # Mount, unmount, or launch a script in an image file
 # 
-# This script file contains a disk partition image, which can be
-# mounted, unmounted, or mounted with a 'launch' script executed.
+# This script file interoperates with a disk partition image, which can 
+# be mounted, unmounted, or mounted with a 'launch' script executed.
 #
+SCRIPT_VERSION=1.0
 
 ###############################################################################
 #
@@ -15,21 +16,26 @@
 #
 SCRIPT_NAME=$( basename "${0}" )
 
-IMAGE_SCRIPT="app-launch.sh"
-
 MOUNT_OFFSET=1048576
 
 #
-# Assume there's an argument and that it's a switch..
+# First argument must be the image file to mount/run:
+#
+IMAGE_FILE=${1}
+shift 
+
+#
+# Assume there's an additional argument and that it's a switch:
 #
 SWITCH=${1}
 
 #
-# If the switch is 'help', then show the usage prompt:
+# If first arg is a switch, show the usage prompt:
 # 
-if [[ "${SWITCH}" == "-h" ]]; then
-
-    echo >&2 "usage: ${SCRIPT_NAME} [ -m | -u | <command> ] "
+if [[ "${IMAGE_FILE:0:1}" == "-" ]]; then
+    
+    echo >&2 "${SCRIPT_NAME} version ${SCRIPT_VERSION} "
+    echo >&2 "usage: ${SCRIPT_NAME} <image file> [ -m | -u | <command> ] "
     exit 2
 fi 
 
@@ -38,7 +44,7 @@ fi
 #
 # Print an error message and abort with a non-zero return code
 #
-SetupErr() {
+ThrowError() {
     echo >&2 "${SCRIPT_NAME}: ${1} ! "
     exit 1
 }
@@ -46,9 +52,67 @@ SetupErr() {
 
 ###############################################################################
 #
-# Check the argument to determine if it's a mount/unmount switch 
+# Check to see if a (set of) 'glob' file names exist, and capture the names
 #
-# $1 = The argument passed to this script
+# $1 = [literally] "basename" if only the basename is to be returned
+# $2 = Source directory
+# $3 = Depth of search
+# $4 = Source glob(s)
+#
+# Returns the file list in ${FILE_LIST[@]}, $?=0 if at least one exists; 
+# If only the first match is desired, use ${FILE_LIST}; 
+#
+FindGlobFilename() {
+
+local BASE_ONLY
+local FILE_GLOB
+local FILE_NAME
+local RESULT
+
+BASE_ONLY=${1}
+shift
+
+FILE_DIR=${1}
+shift
+
+DEPTH=${1}
+shift
+
+FILE_LIST=()
+
+(( DEPTH > 0 )) || ThrowError \
+        "Bad value for 'depth', '${DEPTH}' in '${FUNCNAME}()' !"
+
+#
+# Loop once per glob in the provided list
+#
+RESULT=1
+for FILE_GLOB in "$@"; do
+
+    # Resolve the glob into an array of matching filenames:
+    #
+    while IFS= read -rd '' FILE_NAME; do
+
+        if [[ ${BASE_ONLY,,} == "basename" ]]; then
+        
+            FILE_LIST+=( "$( basename ${FILE_NAME} )" )
+            if [[ -f "${FILE_DIR}/${FILE_LIST}" ]]; then RESULT=0; fi
+        else
+            FILE_LIST+=( "${FILE_NAME}" )
+            if [[ -f "${FILE_NAME}" ]]; then RESULT=0; fi
+        fi
+
+    done < <( find "${FILE_DIR}" -maxdepth ${DEPTH} -type f \
+            -iname "${FILE_GLOB}" -print0 2>/dev/null )
+done
+
+return ${RESULT}
+}
+
+
+###############################################################################
+#
+# Check the second argument to determine if it's a mount/unmount switch
 #
 Check_Mount_Switch() {
     #
@@ -62,7 +126,7 @@ Check_Mount_Switch() {
         # 
         # Reduce the switch argument to lower case & get the first two chars.
         #
-        SWITCH_ARG=${1,,}
+        SWITCH_ARG=${SWITCH,,}
         
         case ${SWITCH_ARG:0:2} in
         
@@ -76,52 +140,6 @@ Check_Mount_Switch() {
             unset MOUNT_ACTION
         esac
     fi
-}
-
-
-###############################################################################
-#
-# Create a 'here-doc' script to exec to that will unmount this image file.
-# 
-# This is needed to prevent a syserr that would occur if we tried to do this 
-# directly from this script -- because this file is the mounted file, and 
-# while this script is executing, the file is 'busy', hence the mount is, too.
-#
-Exec_Unmount_Script() {
-    
-    local TMP_FILE
-    
-    # Ask the operating system to make us a temporary file (will be u+rw):
-    #
-    TMP_FILE=$( mktemp )
-    
-    (( $? == 0 )) || SetupErr \
-            "Cannot create a temp file to serve as a helper script"
-    
-    # Fill the temp file with script code that will pause as this script 
-    # completes and is no longer 'busy', then performs the unmounting. 
-    # 
-    cat > "${TMP_FILE}" << EOF
-    
-        #! /usr/bin/env bash
-        #
-        sleep 1
-        
-        # Use 'udisksctl' to tear down, as it does not require 'sudo'.
-        #
-        udisksctl loop-delete -b "${LOOP_DEV}"
-        
-EOF
-
-    # Verify that the here-document copied correctly to the temp file:
-    #
-    (( $? == 0 )) || SetupErr \
-            "Cannot create a helper script to unmount '${SCRIPT_NAME}'"
-
-    # Now set the mode of the script to make it executable, then xfer to it:
-    #
-    chmod 750 "${TMP_FILE}" && "${TMP_FILE}" &
-    exit
 }
 
 
@@ -144,7 +162,7 @@ Find_Mount_Point() {
     # 
     # /dev/loopX: []: (<file path>), offset <offset in bytes>
     #
-    LOOP_DEV=$( losetup -a | grep "${SCRIPT_NAME}" | egrep -o '^[^:]+' )
+    LOOP_DEV=$( /sbin/losetup -a | grep "${IMAGE_FILE}" | egrep -o '^[^:]+' )
     
     # Unfortunately, the above does not include mount information. 
     #
@@ -196,7 +214,7 @@ Mount_Image() {
         # Use 'udisksctl' to mount, as it does not require 'sudo' 
         # elevation, and it will auto-create a mount directory:  
         #
-        udisksctl mount -b "${LOOP_DEV}"
+        RESULT=$( udisksctl mount -b "${LOOP_DEV}" )
 
         # If the mount fails, we can't continue:
         #    
@@ -208,41 +226,55 @@ Mount_Image() {
 
         # If we still can't resolve a mount point, we can't continue:
         # 
-        (( $? == 0 )) || SetupErr \
-                "${SCRIPT_NAME} is bound to '${LOOP_DEV}', but won't mount"
+        (( $? == 0 )) || ThrowError \
+                "${IMAGE_FILE} is bound to '${LOOP_DEV}', but won't mount"
         ;;
         
     2 ) # Not bound to a loop device; Attempt to loop-mount the image file.
         # Use 'udisksctl' so that we don't have to have 'sudo' privileges.
         #
-        RESULT=$( udisksctl loop-setup -o ${MOUNT_OFFSET} -f "${SCRIPT_NAME}" )
+        RESULT=$( udisksctl loop-setup -o ${MOUNT_OFFSET} -f "${IMAGE_FILE}" )
         
         # If loop-mounting fails, then we cannot continue:
         #    
-        (( $? == 0 )) || SetupErr \
-                "Cannot bind '${SCRIPT_NAME}' to a loop device for mounting"
+        (( $? == 0 )) || ThrowError \
+                "Cannot bind '${IMAGE_FILE}' to a loop device for mounting"
         
         # If it succeeds, it should be bound & mounted; get the loop device:
         #
         LOOP_DEV=$( printf "%s" "${RESULT}" | grep -o '/dev/loop.' )
         
-        [[ -n "${LOOP_DEV}" ]] || SetupErr \
-                "Cannot determine the loop device bound to '${SCRIPT_NAME}'"
+        [[ -n "${LOOP_DEV}" ]] || ThrowError \
+                "Cannot determine the loop device bound to '${IMAGE_FILE}'"
         
         # Now that we have a valid loop device, get the mount point:
         #
         sleep 2
         Find_Mount_Point
-
+        
+        if (( $? != 0 )); then
+            #
+            # If it didn't mount, then try one more time...
+            #
+            RESULT=$( udisksctl mount -b "${LOOP_DEV}" )
+            
+            (( $? == 0 )) || ThrowError \
+                    "Bound '${IMAGE_FILE}', but cannot mount '${LOOP_DEV}'"
+            
+            # Now try again to get the mount point:
+            #
+            sleep 2
+            Find_Mount_Point
+        fi
+        
         # If we can't resolve the mount point, we can't continue:
         #    
-        (( $? == 0 )) || SetupErr \
-                "Cannot determine the mount point for '${LOOP_DEV}'"
+        (( $? == 0 )) || ThrowError "Cannot mount '${IMAGE_FILE}'"
         ;;
         
     3 ) # Unknown system call error occurred...
         #
-        SetupErr "Cannot determine a mount point for '${SCRIPT_NAME}'"
+        ThrowError "Cannot determine a mount point for '${IMAGE_FILE}'"
         ;;
     esac   
     
@@ -253,7 +285,7 @@ Mount_Image() {
     
     # Otherwise, echo an 'already mounted' message & exit successfully:
     #
-    echo >&2 "${SCRIPT_NAME}: Mounted as '${MOUNT_PATH}'. "
+    echo >&2 "${IMAGE_FILE} has been mounted as '${MOUNT_PATH}'. "
     exit
 }
 
@@ -273,35 +305,46 @@ Unmount_Image() {
     case $? in
         
     0 ) # We're bound to a loop device and mounted.
-        # We need to exec to another script to unmount, 
-        # otherwise our own execution will block umounting. 
+        # Use 'udisksctl' to tear down, as it does not require 'sudo'.
         #
-        Exec_Unmount_Script
-        ;;
+        RESULT=$( udisksctl unmount -b "${LOOP_DEV}" )
+        
+        (( $? == 0 )) || ThrowError "Cannot unmount '${LOOP_DEV}'"
+        
+        sleep 2
+        Find_Mount_Point
+        
+        (( $? == 2 )) && exit
+        ;&
     
     1 ) # We're bound to a loop device, but not mounted. 
         # Use 'udisksctl' to tear down, as it does not require 'sudo'.
         #
-        udisksctl loop-delete -b "${LOOP_DEV}"
+        RESULT=$( udisksctl loop-delete -b "${LOOP_DEV}" )
+        exit $?
         ;;
         
     2 ) # Echo an 'already unmounted' message & exit successfully:
         #
-        echo >&2 "${SCRIPT_NAME}: Not mounted "
+        ThrowError "${IMAGE_FILE} is not mounted"
         ;;
         
-    3 ) # Unknown system call error occurred...
+    * ) # Unknown system call error occurred...
         #
-        SetupErr "Cannot determine a mount point for '${SCRIPT_NAME}'"
+        ThrowError "Cannot determine a mount point for '${IMAGE_FILE}'"
         ;;
     
     esac
-    
-    exit $?
 }
 
 
 ###############################################################################
+# 
+# The first arg must be a image file; the file must at least exist:
+#
+[[ -r "${IMAGE_FILE}" ]] || ThrowError \
+        "Cannot find bottle image file '${IMAGE_FILE}'"
+        
 #
 # Check for an argument instructing us to mount/umount the image file:
 #
@@ -329,23 +372,22 @@ Mount_Image -q
 sleep 3
 
 #
-# Pass all the arguments to the script in the partition image:
+# To keep things immune to file name dependencies/changes, look for the 
+# first file in the mounted image that ends in '.sh' and go with that:
 #
-if [[ ! -r "${MOUNT_PATH}"/"${IMAGE_SCRIPT}" ]]; then 
+FindGlobFilename "fullpath" "${MOUNT_PATH}" 1 "*.sh"
+
+# 
+# If we've detected a launch script in the mounted image, run it; 
+# Otherwise, tell the user we can't go any further:
+#
+if [[ $? -eq 0 && -x "${FILE_LIST}" ]]; then 
     
-    echo >&2 -n "${SCRIPT_NAME}: "
-    echo >&2    "Cannot find a script '${IMAGE_SCRIPT}' in ${MOUNT_PATH} "
-    exit
+    exec "${FILE_LIST}" "$@"
+else
+    ThrowError "${SCRIPT_NAME}: Cannot find a script in ${MOUNT_PATH}"
 fi
 
-#
-# We've detected the expected launch script in the mounted image -- run it:
-#
-exec "${MOUNT_PATH}"/"${IMAGE_SCRIPT}" "$@"
-
-#
-# We MUST end the script explicitly, as the partition image follows!!
-#
 exit $?
 
 ###############################################################################
