@@ -1,4 +1,4 @@
-# #! /usr/bin/env bash
+#! /usr/bin/env bash
 #
 # Mount, unmount, or launch a script in an image file
 # 
