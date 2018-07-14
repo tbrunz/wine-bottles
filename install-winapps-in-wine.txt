@@ -1,0 +1,227 @@
+
+Myst Wine Installation Cheet Sheet
+--------------------------------------
+
+How to create a 32-bit Wine Bottle
+===============================================================================
+
+Run the following command to generate the wine bottle at a given path:
+
+    $ WINEARCH=win32 WINEPREFIX=${HOME}/path/to/wine/prefix winecfg
+
+Note that the prefix/bottle folder must NOT already exist.
+
+
+To run common Windows apps
+
+    Open a Wine Bottle control panel: $ wine control
+    Open a Wine Bottle file browser:  $ winefile
+    
+
+To install using an installer application:
+
+    $ WINEPREFIX=${HOME}/path/to/wine/prefix wine control
+
+Select the Windows version, etc., then from the control panel that opens, 
+click "Add/Remove Programs".  In the dialog that appears, click "Install...", 
+then loacate the installer app.  When it runs, follow its instructions.
+
+
+To run the MSI installer 
+
+    $ wine msiexec /i <installer-name>.msi
+or
+    $ wine start <installer-name>.msi
+    
+    
+To launch a Windows application listed in the Start Menu
+
+    $ wine start 'c:\<path\to\exe\windows\style>'
+or
+    $ wine start "c:\\<path\\to\\exe\\windows\\style>"
+or
+    $ wine start /unix "<path/to/exe/*nix/style>"
+    
+where the path will be something like 
+
+    'C:\users\Public\Start Menu\Programs\GOG.com\Riven\Riven.lnk'
+
+Add (escaped) parameters for Windows apps to CLI commands as normal (for bash). 
+
+
+To run a Windows application in a wine bottle using the CLI:
+
+    $ wine explorer /desktop=<desktop-name>,800x600 <application-name>.exe
+
+
+DOS applications work best when pinned to a single CPU:
+
+    $ taskset -c 1 wine <application-name>.exe
+
+    
+To combine pinning with launching from the CLI:
+
+    $ taskset -c 1 env WINEPREFIX=<path/to/wine/bottle> wine explorer \
+      /desktop=<application-name>,800x600 <application-name>.exe
+
+      
+For best results, disable compiz.  Never install DirectX (built into Wine). 
+If the screen doesn't reset itself after a wine app quits, try $ xrandr -s 0
+
+Wine environment variables:
+    WINEDEBUG
+    WINEPREFIX
+    WINEARCH=win32
+    WINEVERPATH
+    WINESERVER
+    WINELOADER
+    WINEDLLPATH
+    LD_LIBRARY_PATH
+
+
+
+realMYST v1 - Mattel Interactive CD, v1.11, 2000
+===============================================================================
+
+* Create a 32-bit Win98 wine bottle; You do not need to set a virtual desktop.  
+* Install the Indeo 5 codecs first, custom w/o web browser option. 
+* Install realMYST (from the CD), selecting the "Full Install" option. 
+* Move "realMYST" in the user's 'Start Menu' folder to the 'Public' folder.
+* Install Ubisoft's 1.11 patch, then the "End movie fix"/"PageLoop.bik" patch.
+* Backup and then replace the file "RealMYST.exe" w/ the "noDVD" patch. 
+* Re-run winecfg, add "RealMYST.exe" to Applications & set it to "Windows XP". 
+* Run "wine explorer", then surf to and run "realMYSTSetup.exe". 
+* Configure for Direct3D, then "<graphics card> [Wine D3D7 T&L HAL]", res, etc.
+* Run "RealMYST.exe" using "taskset -c 1 WINEPREFIX= ..."
+
+
+realMYST Masterpiece - GOG v2 download
+===============================================================================
+
+* Create a 32-bit WinXP wine bottle; You do not need to set a virtual desktop.  
+* Install realMYST (from the setup EXE file). Expect 3-4 error dialogs at end. 
+* On modern hardware, you can max out the quality settings. 
+
+
+Riven - Myst 10th Anniversary DVD, v1.2, 2003
+===============================================================================
+
+* Create a 32-bit WinXP wine bottle; You WILL need to set a virtual desktop! 
+* Mount the ISO image and install Riven, but it's only necessary to install 
+  Quicktime if you want to also install/play the "making of" movie in Q/T.
+* Copy over all the data files in the 'data' folder from the Riven ISO to the 
+  'data' directory in your Riven Wine installation, replacing any existing. 
+* Edit the 'riven.cfg' file & change all 8 of the " Disc = [:digit:]" lines 
+  under the "; Data file sets" section to "Disc = 0" then save the changes.
+* Copy the "quicktime.qtp" and "quicktime.qts" to the Riven root directory.
+* Run "riven.exe" using "taskset -c 1 WINEPREFIX= ..."
+
+
+Riven - GOG v1.02 download
+===============================================================================
+
+* Create a 32-bit WinXP wine bottle; You WILL need to set a virtual desktop!   
+* Install Riven (from the setup EXE file).  Install QTlite, but skip installing 
+  the browser-related extensions.  Under "Advanced", select "GDI (Safe Mode)".
+* Run "riven.exe" using "taskset -c 1 WINEPREFIX= ..."
+
+
+Myst III: Exile - Myst 10th Anniversary DVD, v1.27, 2003
+===============================================================================
+
+* Create a 32-bit WinXP wine bottle; You do not need to set a virtual desktop.
+* Mount the ISO image and install Exile, selecting the "Full Install" option.
+* Do not install DirectX, but do install Quicktime, and the movie if desired.
+* Backup and then replace the file "M3.exe" w/ the "noDVD" patch version. 
+* Move the "Data" folder from the game's folder into the 'bin' folder.
+
+
+Myst IV: Revelation - Retail DVD, v1.03, 2004
+===============================================================================
+
+* Create a 32-bit WinXP wine bottle; You may want to set a virtual desktop.
+* Mount the ISO image and install Revelation, selecting the "Complete" option. 
+* Install Ubisoft's 1.03 patch, then backup/rename the 'm4_thor_rd.dll' and 
+  'Myst4.exe' in the game's 'bin' folder, then copy/overwrite 'm4_thor_rd.dll' 
+  and 'Myst4.exe' in the game's 'bin' folder with the NoDVD patch versions.
+* 
+
+
+Myst V: End of Ages - GOG v1. download
+===============================================================================
+
+* Create a 32-bit WinXP wine bottle; You do not need to set a virtual desktop.   
+* Install End of Ages (from the setup EXE file).  
+
+
+Uru: The Complete Chronicles - GOG v1. download
+===============================================================================
+
+* Create a 32-bit WinXP wine bottle; You do not need to set a virtual desktop.   
+* Install Uru (from the setup EXE file).  
+
+
+===============================================================================
+
+Scripts to generate and load image files of wine bottles
+(Assumes that /dev/loop1 remains available throughout.)
+
+Commands are run as 'maint'.
+
+
+mkdsk <image file> <size in MB>
+
+mkpart <image file>
+
+dofs <partition LABEL>
+
+domnt <image file>
+
+dotar <partition LABEL> <tarfile core filename>
+
+drop
+
+-----
+
+mkdsk () { 
+    dd if=/dev/zero of=${1} iflag=fullblock bs=1M count=${2} && \
+    sync && \
+    ls --color=auto -lF
+}
+
+mkpar () { 
+    sudo losetup loop1 ${1} && \
+    sudo parted /dev/loop1 && \
+    sudo losetup
+}
+
+dofs () { 
+    sudo mkfs -t ext4 -m 1 -b 4096 -L ${1} /dev/loop1p1 && \
+    sudo losetup -d /dev/loop1 && \
+    ls --color=auto --color=auto -l && \
+    sudo losetup
+}
+
+domnt () { 
+    udisksctl loop-setup -o 1048576 -f ${1} && \
+    udisksctl mount -b /dev/loop1
+    ls --color=auto -l /media/maint
+}
+
+dotar () { 
+    sudo chown maint.maint /media/maint/${1} && \
+    tar -C /media/maint/${1} -xf wine-${2}.tar && \
+    cp myst install-winapps-in-wine.txt /media/maint/${1} && \
+    sync
+}
+
+drop () { 
+    udisksctl unmount -b /dev/loop1 && \
+    udisksctl loop-delete -b /dev/loop1 && \
+    ls --color=auto -lF
+    sudo losetup
+}
+
+===============================================================================
+
+
