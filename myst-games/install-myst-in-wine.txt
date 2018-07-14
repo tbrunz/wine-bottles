@@ -1,5 +1,5 @@
 
-Myst Wine Installation Cheat Sheet
+Myst Wine Installation Cheet Sheet
 --------------------------------------
 
 realMYST v1 - Mattel Interactive CD, v1.11, 2000
@@ -17,12 +17,20 @@ realMYST v1 - Mattel Interactive CD, v1.11, 2000
 * Run "RealMYST.exe" using "taskset -c 1 WINEPREFIX= ..."
 
 
-realMYST Masterpiece - Good Old Games v2 download
+realMYST Masterpiece - GOG v2 download
 ===============================================================================
 
 * Create a 32-bit WinXP wine bottle; You do not need to set a virtual desktop.  
 * Install realMYST (from the setup EXE file). Expect 3-4 error dialogs at end. 
 * On modern hardware, you can max out the quality settings. 
+
+
+realMYST Masterpiece - GOG v20313 download
+===============================================================================
+
+* Create a 64-bit Windows7 wine bottle; You don't need to set a virtual desktop.  
+* Install realMYST (from the setup EXE file).  
+* On modern hardware, you can max out the quality settings.
 
 
 Riven - Myst 10th Anniversary DVD, v1.2, 2003
@@ -39,7 +47,7 @@ Riven - Myst 10th Anniversary DVD, v1.2, 2003
 * Run "riven.exe" using "taskset -c 1 WINEPREFIX= ..."
 
 
-Riven - Good Old Games v1.02 download
+Riven - GOG v1.02 download
 ===============================================================================
 
 * Create a 32-bit WinXP wine bottle; You WILL need to set a virtual desktop!   
@@ -69,14 +77,14 @@ Myst IV: Revelation - Retail DVD, v1.03, 2004
 * 
 
 
-Myst V: End of Ages - Good Old Games v1. download
+Myst V: End of Ages - GOG v1. download
 ===============================================================================
 
 * Create a 32-bit WinXP wine bottle; You do not need to set a virtual desktop.   
 * Install End of Ages (from the setup EXE file).  
 
 
-Uru: The Complete Chronicles - Good Old Games v1. download
+Uru: The Complete Chronicles - GOG v1. download
 ===============================================================================
 
 * Create a 32-bit WinXP wine bottle; You do not need to set a virtual desktop.   
@@ -84,65 +92,4 @@ Uru: The Complete Chronicles - Good Old Games v1. download
 
 
 ===============================================================================
-
-Scripts to generate and load image files of wine bottles
-(Assumes that /dev/loop1 remains available throughout.)
-Commands are run as 'maint'.
-
-
-mkdsk <image file> <size in MB>
-
-mkpart <image file>
-
-dofs <partition LABEL>
-
-domnt <image file>
-
-dotar <partition LABEL> <tarfile core filename>
-
-drop
-
------
-
-mkdsk () { 
-    dd if=/dev/zero of=${1} iflag=fullblock bs=1M count=${2} && \
-    sync && \
-    ls --color=auto -lF
-}
-
-mkpar () { 
-    sudo losetup loop1 ${1} && \
-    sudo parted /dev/loop1 && \
-    sudo losetup
-}
-
-dofs () { 
-    sudo mkfs -t ext4 -m 1 -b 4096 -L ${1} /dev/loop1p1 && \
-    sudo losetup -d /dev/loop1 && \
-    ls --color=auto --color=auto -l && \
-    sudo losetup
-}
-
-domnt () { 
-    udisksctl loop-setup -o 1048576 -f ${1} && \
-    udisksctl mount -b /dev/loop1
-    ls --color=auto -l /media/maint
-}
-
-dotar () { 
-    sudo chown maint.maint /media/maint/${1} && \
-    tar -C /media/maint/${1} -xf wine-${2}.tar && \
-    cp myst.sh install-myst-in-wine.txt /media/maint/${1} && \
-    sync
-}
-
-drop () { 
-    udisksctl unmount -b /dev/loop1 && \
-    udisksctl loop-delete -b /dev/loop1 && \
-    ls --color=auto -lF
-    sudo losetup
-}
-
-===============================================================================
-
 
