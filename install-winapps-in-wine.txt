@@ -2,12 +2,14 @@
 Myst Wine Installation Cheet Sheet
 --------------------------------------
 
-How to create a 32-bit Wine Bottle
+How to create a Wine Bottle from the CLI
 ===============================================================================
 
 Run the following command to generate the wine bottle at a given path:
 
-    $ WINEARCH=win32 WINEPREFIX=${HOME}/path/to/wine/prefix winecfg
+    32-bit = $ WINEARCH=win32 WINEPREFIX=${HOME}/path/to/wine/prefix winecfg
+    64-bit = $ WINEPREFIX=${HOME}/path/to/wine/prefix winecfg
+    
 
 Note that the prefix/bottle folder must NOT already exist.
 
@@ -103,6 +105,14 @@ realMYST Masterpiece - GOG v2 download
 * On modern hardware, you can max out the quality settings. 
 
 
+realMYST Masterpiece - GOG v20313 download
+===============================================================================
+
+* Create a 64-bit Windows7 wine bottle; You don't need to set a virtual desktop.  
+* Install realMYST (from the setup EXE file).  
+* On modern hardware, you can max out the quality settings.
+
+
 Riven - Myst 10th Anniversary DVD, v1.2, 2003
 ===============================================================================
 
@@ -169,17 +179,19 @@ Scripts to generate and load image files of wine bottles
 Commands are run as 'maint'.
 
 
-mkdsk <image file> <size in MB>
+mkdsk <image-file> <size-in-MB>
 
-mkpart <image file>
+mkpar <image-file>
 
-dofs <partition LABEL>
+dofs <partition-LABEL>
 
-domnt <image file>
+domnt <image-file>
 
-dotar <partition LABEL> <tarfile core filename>
+dotar <partition-LABEL> <tarfile-core-filename>
 
 drop
+
+mkrun.sh <run-script> <image-file>
 
 -----
 
@@ -221,6 +233,8 @@ drop () {
     ls --color=auto -lF
     sudo losetup
 }
+
+mkrun.sh
 
 ===============================================================================
 
