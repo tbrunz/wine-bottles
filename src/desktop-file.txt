@@ -7,8 +7,6 @@ Path=${BOTTLE_MOUNT_PATH}/${APP_REL_PATH}
 Icon=${APP_ICON_FILENAME}
 StartupWMClass=${WINDOWS_FILENAME}
 
-;Exec=env WINEPREFIX="/home/ted/.wine-realmyst-me-new" /opt/wine-staging/bin/wine C:\\\\windows\\\\command\\\\start.exe /Unix /home/ted/.wine-realmyst-me-new/dosdevices/c:/users/Public/Desktop/realMyst\\ -\\ Masterpiece\\ Edition.lnk
-;Path=/home/ted/.wine-realmyst-me-new/dosdevices/c:/GOG Games/realMyst Masterpiece Edition
+;Exec=env WINEPREFIX="${HOME}/.wine-realmyst-me-new" /opt/wine-staging/bin/wine C:\\\\windows\\\\command\\\\start.exe /Unix ${HOME}/.wine-realmyst-me-new/dosdevices/c:/users/Public/Desktop/realMyst\\ -\\ Masterpiece\\ Edition.lnk
+;Path=${HOME}/.wine-realmyst-me-new/dosdevices/c:/GOG Games/realMyst Masterpiece Edition
 ;StartupWMClass=realmyst.exe
-
-

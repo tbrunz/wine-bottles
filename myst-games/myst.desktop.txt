@@ -1,8 +1,8 @@
 [Desktop Entry]
 Name=realMyst - Masterpiece Edition
-Exec=env WINEPREFIX="/home/ted/.wine-realmyst-me-new" /opt/wine-staging/bin/wine C:\\\\windows\\\\command\\\\start.exe /Unix /home/ted/.wine-realmyst-me-new/dosdevices/c:/users/Public/Desktop/realMyst\\ -\\ Masterpiece\\ Edition.lnk
+Exec=env WINEPREFIX="${HOME}/.wine-realmyst-me-new" /opt/wine-staging/bin/wine C:\\\\windows\\\\command\\\\start.exe /Unix ${HOME}/.wine-realmyst-me-new/dosdevices/c:/users/Public/Desktop/realMyst\\ -\\ Masterpiece\\ Edition.lnk
 Type=Application
 StartupNotify=true
-Path=/home/ted/.wine-realmyst-me-new/dosdevices/c:/GOG Games/realMyst Masterpiece Edition
+Path=${HOME}/.wine-realmyst-me-new/dosdevices/c:/GOG Games/realMyst Masterpiece Edition
 Icon=97FD_goggame-1207664443.0
 StartupWMClass=realmyst.exe
