@@ -32,10 +32,11 @@ re-install as you need to do with Crossover archives.
 How could that work?  Well, with Linux you can create a disk image file, and 
 mount that to get access to the files inside.  So if we were to implement our 
 Wine environment inside a disk image file, we would have a portable, single 
-file to move between systems.  On top of that, it would be a lot harder to 
-lose track of/overwrite the huge set of files that a Wine environment typically 
-contains, because "closing an application" that lives in a disk image can 
-include unmounting it from the file system entirely.
+file to move between systems.  On top of that, it would retain the state of 
+the application, and it would be a lot harder to lose track of/overwrite the 
+huge set of files that a Wine environment typically contains, because "closing 
+an application" that lives in a disk image can include unmounting it from the 
+host file system entirely.
 
 However, a disk image file has its own issues...
 
@@ -43,7 +44,7 @@ For one, how do you mount it?  When you're done using it, how do you unmount
 it?  And the biggest question of all -- how do you create such a thing?
 
 You need a script...  Or a set of scripts.  A script to create this kind of 
-Wine Bottle, a script to automate installing the Windows application, a script 
+Wine bottle, a script to automate installing the Windows application, a script 
 to automate mounting and unmounting it, etc.
 
 In fact, in an ideal world, the disk image file would itself be a script that 
@@ -55,8 +56,8 @@ So in that ideal world, the script that mounts itself as a disk image would
 automagically hand off to an internal script in the image's root directory, 
 which (being application-independent), would read an adjacent app config file  
 to determine where the launcher is for the Windows application.  Then it would 
-run it for you.  And when you shut down the application, it would resume and 
-unmount the image file.
+run it for you.  And when you shut down the application, it would resume to 
+unmount the image file, then shut itself down.
 
 How cool would that be?
 
