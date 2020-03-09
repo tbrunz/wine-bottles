@@ -1,0 +1,69 @@
+
+How to create a Wine Bottle from the CLI
+===============================================================================
+
+
+Scripts to generate and load image files of wine bottles.
+(Assumes that '/dev/loop1' remains available throughout.)
+
+
+mkdsk <image-file> <size-in-MB>
+
+mkpar <image-file>
+
+dofs <partition-LABEL>
+
+domnt <image-file>
+
+dotar <partition-LABEL> <tarfile-core-filename>
+
+drop
+
+mkrun.sh <run-script> <image-file>
+
+
+===============================================================================
+
+
+mkdsk () {
+    dd if=/dev/zero of=${1} iflag=fullblock bs=1M count=${2} && \
+    sync && \
+    ls --color=auto -lF
+}
+
+mkpar () {
+    sudo losetup loop1 ${1} && \
+    sudo parted /dev/loop1 && \
+    sudo losetup
+}
+
+dofs () {
+    sudo mkfs -t ext4 -m 1 -b 4096 -L ${1} /dev/loop1p1 && \
+    sudo losetup -d /dev/loop1 && \
+    ls --color=auto --color=auto -l && \
+    sudo losetup
+}
+
+domnt () {
+    udisksctl loop-setup -o 1048576 -f ${1} && \
+    udisksctl mount -b /dev/loop1
+    ls --color=auto -l /media/maint
+}
+
+dotar () {
+    sudo chown maint.maint /media/maint/${1} && \
+    tar -C /media/maint/${1} -xf wine-${2}.tar && \
+    cp myst install-winapps-in-wine.txt /media/maint/${1} && \
+    sync
+}
+
+drop () {
+    udisksctl unmount -b /dev/loop1 && \
+    udisksctl loop-delete -b /dev/loop1 && \
+    ls --color=auto -lF
+    sudo losetup
+}
+
+mkrun.sh
+
+===============================================================================

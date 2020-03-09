@@ -1,0 +1,81 @@
+
+Wine Bottle/Image Creation Cheet Sheet
+---------------------------------------
+
+
+Run the following command to generate the wine bottle at a given path:
+
+    32-bit = $ WINEARCH=win32 WINEPREFIX=${HOME}/path/to/wine/prefix winecfg
+    64-bit = $ WINEPREFIX=${HOME}/path/to/wine/prefix winecfg
+
+
+Note that the prefix/bottle folder must NOT already exist.
+
+
+To run common Windows apps
+
+    Open a Wine Bottle control panel: $ wine control
+    Open a Wine Bottle file browser:  $ winefile
+
+
+To install using an installer application:
+
+    $ WINEPREFIX=${HOME}/path/to/wine/prefix wine control
+
+Select the Windows version, etc., then from the control panel that opens,
+click "Add/Remove Programs".  In the dialog that appears, click "Install...",
+then loacate the installer app.  When it runs, follow its instructions.
+
+
+To run the MSI installer
+
+    $ wine msiexec /i <installer-name>.msi
+or
+    $ wine start <installer-name>.msi
+
+
+To launch a Windows application listed in the Start Menu
+
+    $ wine start 'c:\<path\to\exe\windows\style>'
+or
+    $ wine start "c:\\<path\\to\\exe\\windows\\style>"
+or
+    $ wine start /unix "<path/to/exe/*nix/style>"
+
+where the path will be something like
+
+    'C:\users\Public\Start Menu\Programs\GOG.com\Riven\Riven.lnk'
+
+Add (escaped) parameters for Windows apps to CLI commands as normal (for bash).
+
+
+To run a Windows application in a wine bottle using the CLI:
+
+    $ wine explorer /desktop=<desktop-name>,800x600 <application-name>.exe
+
+
+DOS applications work best when pinned to a single CPU:
+
+    $ taskset -c 1 wine <application-name>.exe
+
+
+To combine pinning with launching from the CLI:
+
+    $ taskset -c 1 env WINEPREFIX=<path/to/wine/bottle> wine explorer \
+      /desktop=<application-name>,800x600 <application-name>.exe
+
+
+For best results, disable compiz.  Never install DirectX (built into Wine).
+If the screen doesn't reset itself after a wine app quits, try $ xrandr -s 0
+
+Wine environment variables:
+    WINEDEBUG
+    WINEPREFIX
+    WINEARCH=win32
+    WINEVERPATH
+    WINESERVER
+    WINELOADER
+    WINEDLLPATH
+    LD_LIBRARY_PATH
+
+===============================================================================
